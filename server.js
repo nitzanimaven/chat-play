@@ -1,14 +1,6 @@
 const express = require('express');
 const { Configuration, OpenAIApi } = require("openai");
 const cors = require('cors');
-
-// Set up your OpenAI API key and endpoint
-const configuration = new Configuration({
-    apiKey: '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',
-});
-
-const openai = new OpenAIApi(configuration);
-
 // Create a new Express app
 const app = express();
 app.use(cors({
@@ -17,9 +9,14 @@ app.use(cors({
 
 
 // Define a function to send a prompt to ChatGPT and get its response
-async function getChatResponse(prompt, user) {
+async function getChatResponse(prompt, user,key) {
     try {
-       let response = await openai.createCompletion({
+        // Set up your OpenAI API key and endpoint
+        const configuration = new Configuration({
+            apiKey: key,
+        });
+        const openai = new OpenAIApi(configuration);
+        let response = await openai.createCompletion({
             model: 'text-davinci-003',
             prompt: `${user}: ${prompt}\nChatGPT:`,
             max_tokens: 250,
@@ -51,8 +48,8 @@ io.on('connection', (socket) => {
     });
     socket.on('chat', (message) => {
         const user = users[socket.id];
-        console.log(`User ${socket.id} sent message: ${message}`);
-        getChatResponse(message, user).then((response) => {
+        console.log(`User ${socket.id} sent message: ${message.message}`);
+        getChatResponse(message.message, user,message.key).then((response) => {
             io.emit('chat', { user, message, response });
         });
     });
