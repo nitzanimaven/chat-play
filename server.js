@@ -7,37 +7,37 @@ app.use(cors({
     origin: '*'
 }));
 
-
+const contexts = {};
 // Define a function to send a prompt to ChatGPT and get its response
-async function getChatResponse(prompt, user,key) {
+async function getChatResponse(prompt, user, key) {
     try {
         // Set up your OpenAI API key and endpoint
         const configuration = new Configuration({
             apiKey: key,
         });
         const openai = new OpenAIApi(configuration);
-        
-            const context = contexts[user] || [];
-     const history = context.map(([u, p]) => `${u}: ${p}`).join('\n');
-    const response = await openai.createCompletion({
-      model: 'text-davinci-003',
-       prompt: `${user}: ${prompt}\nChatGPT:`,
-      prompt: `${history}${history ? '\n' : ''}${user}: ${prompt}\nChatGPT:`,
-     max_tokens: 3500,
-      temperature: 0,
-     // context: context.map(([u, p]) => ({ text: `${u}: ${p}` })),
-    });
 
-    const text = response.data.choices[0].text.trim();
-    contexts[user] = [...context, [user, prompt, text]];
-    return text;
-        
-      //  let response = await openai.createCompletion({
-          //  model: 'text-davinci-003',
-         //   prompt: `${user}: ${prompt}\nChatGPT:`,
-          //  max_tokens: 250,
-          //  temperature: 0
-       // });
+        const context = contexts[user] || [];
+        const history = context.map(([u, p]) => `${u}: ${p}`).join('\n');
+        const response = await openai.createCompletion({
+            model: 'text-davinci-003',
+            prompt: `${user}: ${prompt}\nChatGPT:`,
+            prompt: `${history}${history ? '\n' : ''}${user}: ${prompt}\nChatGPT:`,
+            max_tokens: 3500,
+            temperature: 0,
+            // context: context.map(([u, p]) => ({ text: `${u}: ${p}` })),
+        });
+
+        const text = response.data.choices[0].text.trim();
+        contexts[user] = [...context, [user, prompt, text]];
+        return text;
+
+        //  let response = await openai.createCompletion({
+        //  model: 'text-davinci-003',
+        //   prompt: `${user}: ${prompt}\nChatGPT:`,
+        //  max_tokens: 250,
+        //  temperature: 0
+        // });
 
         //return response.data.choices[0].text.trim();
 
@@ -65,7 +65,7 @@ io.on('connection', (socket) => {
     socket.on('chat', (message) => {
         const user = users[socket.id];
         console.log(`User ${socket.id} sent message: ${message.message}`);
-        getChatResponse(message.message, user,message.key).then((response) => {
+        getChatResponse(message.message, user, message.key).then((response) => {
             io.emit('chat', { user, message, response });
         });
     });
