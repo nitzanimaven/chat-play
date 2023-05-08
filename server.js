@@ -16,14 +16,30 @@ async function getChatResponse(prompt, user,key) {
             apiKey: key,
         });
         const openai = new OpenAIApi(configuration);
-        let response = await openai.createCompletion({
-            model: 'text-davinci-003',
-            prompt: `${user}: ${prompt}\nChatGPT:`,
-            max_tokens: 250,
-            temperature: 0
-        });
+        
+            const context = contexts[user] || [];
+     const history = context.map(([u, p]) => `${u}: ${p}`).join('\n');
+    const response = await openai.createCompletion({
+      model: 'text-davinci-003',
+       prompt: `${user}: ${prompt}\nChatGPT:`,
+      prompt: `${history}${history ? '\n' : ''}${user}: ${prompt}\nChatGPT:`,
+     max_tokens: 3500,
+      temperature: 0,
+     // context: context.map(([u, p]) => ({ text: `${u}: ${p}` })),
+    });
 
-        return response.data.choices[0].text.trim();
+    const text = response.data.choices[0].text.trim();
+    contexts[user] = [...context, [user, prompt, text]];
+    return text;
+        
+      //  let response = await openai.createCompletion({
+          //  model: 'text-davinci-003',
+         //   prompt: `${user}: ${prompt}\nChatGPT:`,
+          //  max_tokens: 250,
+          //  temperature: 0
+       // });
+
+        //return response.data.choices[0].text.trim();
 
     } catch (error) {
         console.error(error.message);
